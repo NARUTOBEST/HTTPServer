@@ -195,8 +195,11 @@ void HttpServer::handleRequest(const HttpRequest &req, HttpResponse *resp)
     }
     catch (const std::exception& e) 
     {
-        // 错误处理
-        resp->setStatusCode(HttpResponse::k500InternalServerError);
+        resp->setStatusLine(req.getVersion().empty() ? "HTTP/1.1" : req.getVersion(),
+                            HttpResponse::k500InternalServerError,
+                            "Internal Server Error");
+        resp->setCloseConnection(true);
+        resp->setContentType("text/plain");
         resp->setBody(e.what());
     }
 }

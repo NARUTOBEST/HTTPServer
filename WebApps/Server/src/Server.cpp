@@ -1,3 +1,6 @@
+#include <cstdlib>
+#include <string>
+
 #include "../include/handlers/EntryHandler.h"
 #include "../include/handlers/LoginHandler.h"
 #include "../include/handlers/RegisterHandler.h"
@@ -12,6 +15,17 @@
 #include "../../../HttpServer/include/http/HttpServer.h"
 
 using namespace http;
+
+namespace
+{
+
+std::string envOrDefault(const char* name, const std::string& defaultValue)
+{
+    const char* value = std::getenv(name);
+    return (value != nullptr && value[0] != '\0') ? std::string(value) : defaultValue;
+}
+
+} // namespace
 
 AppServer::AppServer(int port,
                            const std::string &name,
@@ -33,8 +47,13 @@ void AppServer::start()
 
 void AppServer::initialize()
 {
-    // 初始化数据库连接池
-    http::MysqlUtil::init("tcp://127.0.0.1:3306", "root", "root", "webapp", 10);
+    // 初始化数据库连接池（Docker 中通过环境变量注入，本地开发可用默认值）
+    http::MysqlUtil::init(
+        envOrDefault("DB_HOST", "tcp://127.0.0.1:3306"),
+        envOrDefault("DB_USER", "root"),
+        envOrDefault("DB_PASSWORD", "root"),
+        envOrDefault("DB_NAME", "webapp"),
+        10);
     // 初始化会话
     initializeSession();
     // 初始化中间件
