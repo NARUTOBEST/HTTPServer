@@ -87,11 +87,107 @@ HTTPServer/
 
 ## 构建与运行
 
+示例应用依赖 MySQL 数据库。推荐用 **Docker Compose** 一键启动；也可在 Linux / WSL 下本地编译运行。
+
+### 方式一：Docker Compose（推荐）
+
+**环境要求：** [Docker](https://docs.docker.com/get-docker/) 与 [Docker Compose](https://docs.docker.com/compose/)
+
+在项目根目录执行：
+
+```bash
+docker compose up --build -d
+```
+
+首次启动会自动：
+
+1. 构建应用镜像（编译 Muduo 与项目源码）
+2. 启动 MySQL 8.0，并执行 `init.sql` 初始化 `webapp` 库与 `users` 表
+3. 等待 MySQL 就绪后启动 HTTP 服务
+
+启动完成后，浏览器访问：
+
+```
+http://localhost:8080
+```
+
+常用命令：
+
+```bash
+# 查看日志
+docker compose logs -f app
+
+# 停止服务
+docker compose down
+
+# 停止并清除数据库卷（下次启动会重新执行 init.sql）
+docker compose down -v
+```
+
+**可配置环境变量**（可在项目根目录创建 `.env` 文件，或直接 export）：
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `APP_PORT` | `8080` | 宿主机映射端口 |
+| `MYSQL_ROOT_PASSWORD` | `root` | MySQL root 密码 |
+| `DB_NAME` | `webapp` | 数据库名 |
+| `DB_USER` | `root` | 应用连接用户名 |
+| `DB_HOST` | `tcp://mysql:3306` | 应用连接地址（容器内默认即可） |
+
+> MySQL 默认**不映射**到宿主机 3306，避免与本机已有 MySQL 冲突；应用通过 Docker 内网 `mysql:3306` 访问。
+
+### 方式二：本地编译运行
+
+**环境要求（Linux / WSL 推荐）：**
+
+- C++17 编译器（g++ / clang）
+- CMake ≥ 3.10
+- [Muduo](https://github.com/chenshuo/muduo)（已编译安装）
+- OpenSSL、Boost
+- MySQL Server 8.0
+- `libmysqlcppconn-dev`、`libmysqlclient-dev`、`nlohmann-json3-dev`
+
+**1. 初始化数据库**
+
+确保 MySQL 已启动，执行：
+
+```bash
+mysql -u root -p < init.sql
+```
+
+**2. 编译**
+
 ```bash
 mkdir build && cd build
 cmake ..
-make
-./simple_server -p 80
+make -j$(nproc)
 ```
 
-运行前请确保已安装 Muduo、OpenSSL、MySQL 及相关依赖，并配置好 `webapp` 数据库。
+**3. 运行**
+
+默认监听 **80** 端口（需 root 权限）或指定其他端口：
+
+```bash
+# 使用 8080 端口（无需 root）
+./simple_server -p 8080
+```
+
+本地运行时，数据库连接可通过环境变量覆盖（未设置时使用下列默认值）：
+
+| 变量 | 默认值 |
+|------|--------|
+| `DB_HOST` | `tcp://127.0.0.1:3306` |
+| `DB_USER` | `root` |
+| `DB_PASSWORD` | `root` |
+| `DB_NAME` | `webapp` |
+
+示例：
+
+```bash
+export DB_PASSWORD=your_password
+./simple_server -p 8080
+```
+
+浏览器访问 `http://localhost:8080`（或你指定的端口）。
+
+> Windows 原生环境因 CMake 中 Muduo / MySQL 头文件路径为 Linux 风格，建议用 **WSL2** 或 **Docker** 运行。
