@@ -96,14 +96,25 @@ HTTPServer/
 在项目根目录执行：
 
 ```bash
+# 1. 拉取 Docker Hub 上的应用镜像
+docker pull lly666666/httpserver:v1.0
+
+# 2. 启动服务（MySQL 镜像已在 docker-compose.yml 中声明，compose 会自动拉取）
+docker compose up -d
+```
+
+若修改了源码、需要本地重新编译应用：
+
+```bash
 docker compose up --build -d
 ```
 
 首次启动会自动：
 
-1. 构建应用镜像（编译 Muduo 与项目源码）
-2. 启动 MySQL 8.0，并执行 `init.sql` 初始化 `webapp` 库与 `users` 表
-3. 等待 MySQL 就绪后启动 HTTP 服务
+1. 拉取 `mysql:8.0`（由 compose 根据 `docker-compose.yml` 自动完成）
+2. 使用 `lly666666/httpserver:v1.0` 应用镜像（或 `--build` 时从源码重新构建）
+3. 执行 `init.sql` 初始化 `webapp` 库与 `users` 表
+4. 等待 MySQL 就绪后启动 HTTP 服务
 
 启动完成后，浏览器访问：
 
